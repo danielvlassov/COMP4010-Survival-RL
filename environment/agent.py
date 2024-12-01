@@ -4,62 +4,86 @@ from config import ENV_CONFIG
 class Agent:
     def __init__(self, initial_state, config, env):
         self.position = initial_state['position']
-        self.inventory = config['initial_resources']
+        self.inventory = config['initial_inventory']
         self.hunger_level = 100
-        self.tools = {'boat': False, 'sword': False}
         self.env = env
 
     def move(self, direction):
+        new_x, new_y = self.position
         if direction == 'up':
-            self.position[1] += 1
+            new_y -= 1
         elif direction == 'down':
-            self.position[1] -= 1
+            new_y += 1
         elif direction == 'left':
-            self.position[0] -= 1
+            new_x -= 1
         elif direction == 'right':
-            self.position[0] += 1
-        else:
-            print("Invalid direction")
+            new_x += 1
         
-        #MOVE LOGIC UP TO ALL IMPLEMENTATION WHENEVER ACTION IS TAKEM 
-        # self.hunger_level -= ENV_CONFIG.hunger_decay_rate
-        # if self.hunger_level <= 0:
-        #     print("Agent is starving!")
-
-    def pick_up(self, resource, env):
-        if resource in self.inventory:
-            self.inventory[resource] += 1
+        
+        if self.env.get_block_type_at(new_x, new_y) == 'W':
+            self._move_water(direction)
         else:
-            self.inventory[resource] = 1
+            self.position = (new_x, new_y)
+        
+
+    def pick_up(self, resource, x, y):
+        if resource == "wood":
+            self.inventory[resource] += 1
 
         if resource == 'berry':
             self.hunger_level = min(100, self.hunger_level + 5)
-            print(f"Ate a berry. Hunger level is now {self.hunger_level}.")
-        self.env.resources.remove(resource)
+            return f"Ate a berry. Hunger level is now {self.hunger_level}."
+        self.env.remove_resource_at(x, y)
 
     def build(self, item):
         if item == 'boat':
             if self.inventory.get('wood', 0) >= 3:
-                self.tools['boat'] = True
+                self.inventory['boat'] += 1
                 self.inventory['wood'] -= 3
-                print("Built a boat!")
+                return "Built a boat!"
             else:
-                print("Not enough wood to build a boat.")
+                return "Not enough wood to build a boat."
         
         elif item == 'sword':
             if self.inventory.get('wood', 0) >= 2:
-                self.tools['sword'] = True
+                self.inventory['sword'] += 1
                 self.inventory['wood'] -= 2
-                print("Built a sword!")
+                return "Built a sword!"
             else:
-                print("Not enough resources to build a sword.")
+                return("Not enough resources to build a sword.")
         else:
-            print(f"Cannot build {item}. Only 'boat' or 'sword' are buildable.")
+            return(f"Cannot build {item}. Only 'boat' or 'sword' are buildable.")
 
-    def hunt(self):
-        if not self.tools['sword']:
-            print("You need a sword to hunt!")
-            return
-        self.env.resources.remove(self.env.get_resource_at(self.position[0], self.position[1]))
+    def hunt(self, x, y):
+        if self.inventory['sword'] == 0:
+           return ("You need a sword to hunt!")
+          
+        self.env.remove_resource_at(x, y)
         self.hunger_level = min(100, self.hunger_level + 20)
-        print(f"Hunger level after hunting: {self.hunger_level}")
+        self.inventory['sword'] -= 1;
+        return(f"Hunger level after hunting: {self.hunger_level}")
+
+    def _move_water(self, direction):
+        x, y = self.position
+
+        while True:
+            if direction == 'up':
+                y += 1
+            elif direction == 'down':
+                y -= 1
+            elif direction == 'left':
+                x -= 1
+            elif direction == 'right':
+                x += 1
+
+            block_type = self.env.get_block_type_at(x, y)
+            
+            if block_type == 'L':
+                self.inventory['boat'] -= 1;
+                self.position = (x, y)
+                break
+            
+            if block_type == 'W':
+                continue
+            
+            
