@@ -5,7 +5,31 @@ from environment.resources import Berry, Wood, Animal
 
 class GridWorld:
     def __init__(self, config, map_layout):
+        # movement, with cutting, creating, eating, and placing
+        # 0-3 -> movement
+        # 4 -> chop wood
+        # 5 -> try to make object
+        # 6 -> try to eat
+        # 7 -> try to place land
+        # will add more later if less lazy (ig cutting works with hunting (check inv))
+        self.n_actions = 8
+        self._directions = [np.array((-1, 0)), 
+                    np.array((1, 0)), 
+                    np.array((0, -1)), 
+                    np.array((0, 1))]
+
+        # will be [x, y]
+        self._current_cell = None
+
         self.grid_size = config['grid_size']
+
+        state_num = 0
+        self._to_state = {}
+        for i in range(self.grid_size[0]):
+            for j in range(self.grid_size[1]):
+                self._to_state[(i, j)] = state_num
+                state_num += 1
+
         self.berry_spawn_rate = config['berry_spawn_rate']
         self.wood_spawn_rate = config['wood_spawn_rate']
         self.deer_spawn_rate = config['animal_spawn_rate']
@@ -53,3 +77,22 @@ class GridWorld:
 
     def get_block_type_at(self, x, y):
         return self.grid[y, x]
+    
+    def step(self, action):
+        if action < 4:
+            next_blockX, next_blockY = self._current_cell + self._directions[action]
+        edgeX, edgeY = self.gridsize
+        if 0 <= next_blockX < edgeX and 0 <= next_blockY < edgeY:
+            self._current_cell = tuple(next_blockX, next_blockY)
+        
+        # reward decreases since hp decreases
+        reward = -1
+        # put reward function here
+        # most likely adds if action is craft, or eat
+
+        state = self._to_state[self._current_cell]
+        return state, reward
+
+    @property
+    def n_actions(self):
+        return self.n_actions
