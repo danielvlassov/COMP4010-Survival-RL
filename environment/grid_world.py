@@ -12,7 +12,7 @@ class GridWorld:
         # 6 -> try to eat
         # 7 -> try to place land
         # will add more later if less lazy (ig cutting works with hunting (check inv))
-        self.n_actions = 8
+        # self.n_actions = 8
         self._directions = [np.array((-1, 0)), 
                     np.array((1, 0)), 
                     np.array((0, -1)), 
@@ -58,16 +58,24 @@ class GridWorld:
                         self.resources.append(Animal((x, y)))
     
     def render(self):
+        render_txt = ''
         for y in range(self.grid_size[0]):
             row = ''
             for x in range(self.grid_size[1]):
-                resource = self.get_resource_at(x, y)
-                if resource:
-                    row += resource.symbol
-                else:
-                    row += '.' if self.grid[y, x] == 'L' else '~'
-            print(row)
-        print()
+                agent_at_position = False
+                for agent in self.agents:
+                    if agent.position == (x, y):
+                        row += 'X' 
+                        agent_at_position = True
+                        break
+                if not agent_at_position:
+                    resource = self.get_resource_at(x, y)
+                    if resource:
+                        row += resource.symbol
+                    else:
+                        row += '.' if self.grid[y, x] == 'L' else '~'
+            render_txt += row +  "\n"
+        return render_txt
 
     def get_resource_at(self, x, y):
         for resource in self.resources:
@@ -96,3 +104,11 @@ class GridWorld:
     @property
     def n_actions(self):
         return self.n_actions
+    
+    def remove_resource_at(self, x, y):
+        for resource in self.resources:
+            if resource.position == (x, y):
+                self.resources.remove(resource)
+                self.grid[y, x] = "L"
+                return True 
+        return False
