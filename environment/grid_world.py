@@ -32,13 +32,6 @@ class GridWorld(gym.Env):
 
         self.grid_size = config['grid_size']
 
-        # state_num = 0
-        # self._to_state = {}
-        # for i in range(self.grid_size[0]):
-        #     for j in range(self.grid_size[1]):
-        #         self._to_state[(i, j)] = state_num
-        #         state_num += 1
-
         self.berry_spawn_rate = config['berry_spawn_rate']
         self.wood_spawn_rate = config['wood_spawn_rate']
         self.deer_spawn_rate = config['animal_spawn_rate']
@@ -73,13 +66,6 @@ class GridWorld(gym.Env):
         for y in range(self.grid_size[0]):
             for x in range(self.grid_size[1]):
                 if self.grid[y, x] == 'L':
-                    # if random.random() < self.berry_spawn_rate:
-                    #     self.resources.append(Berry((x, y)))
-                    # elif random.random() < self.wood_spawn_rate:
-                    #     self.resources.append(Wood((x, y)))
-                    # elif random.random() < self.deer_spawn_rate:
-                    #     self.resources.append(Animal((x, y)))
-                    # ???????
                     if random.random() < self.berry_spawn_rate:
                         self.resources[(x, y)] = Berry((x, y))
                     elif random.random() < self.wood_spawn_rate:
@@ -102,9 +88,6 @@ class GridWorld(gym.Env):
     def get_resource_at(self, x, y):
         if (x, y) in self.resources:
             return self.resources[(x, y)]
-        # for resource in self.resources:
-        #     if resource.position[0] == x and resource.position[1] == y:
-        #         return resource
         return None
 
     def get_block_type_at(self, x, y):
@@ -114,58 +97,61 @@ class GridWorld(gym.Env):
         self.hunger -= self.hunger_decay_rate
         terminated = self.hunger <= 0
 
+        reward = -10 # start off losing health
+        if self.hunger < 0:
+            reward += ENV_CONFIG['agent_rewards']['dies'] 
+
         # move agent
         if action < 4:
             next_blockX, next_blockY = self._current_cell + self._directions[action]
-        
-        # agent only moves if still within grid
-        edgeX, edgeY = self.gridsize
-        if 0 <= next_blockX < edgeX and 0 <= next_blockY < edgeY:
-            self._current_cell = tuple(next_blockX, next_blockY)
-        
-        reward = self.calculate_reward(action)
-
-        state = (self._current_cell[0], self._current_cell[1], self.wood, self.boat, self.sword)
-        # state = self._to_state[self._current_cell]
-        return state, reward, terminated, False, {}
-    
-    def calculate_reward(self, action):
-        reward = -10
-        if 0 <= action <= 3:
-            x, y = self._current_cell
+            # agent only moves if still within grid
+            edgeX, edgeY = self.gridsize
+            if 0 <= next_blockX < edgeX and 0 <= next_blockY < edgeY:
+                self._current_cell = tuple(next_blockX, next_blockY)
             # reward if visiting new cell
-            if not self.visited_cells[x, y]:
-                reward += ENV_CONFIG['agent_rewards']['explore_new_cell']
-                self.visited_cells[x, y] = 1
+                if not self.visited_cells[next_blockX, next_blockY]:
+                    reward += ENV_CONFIG['agent_rewards']['explore_new_cell']
+                    self.visited_cells[x, y] = 1
         elif action == 4:
-            resource = self.get_resource_at(self._current_cell[0], self._current_cell[1])
-            if resource.symbol == "B":
+            x, y = self._current_cell
+            res = self.get_resource_at(x, y)
+            if res and res.symbol == "B":
                 reward += ENV_CONFIG['agent_rewards']['collecting_berry']
+                del self.resources[(x, y)]
             else:
                 reward -= 20 # arbitrary reward for invalid action
         elif action == 5:
-            resource = self.get_resource_at(self._current_cell[0], self._current_cell[1])
-            if resource.symbol == "W":
-                self.wood += 1
+            x, y = self._current_cell
+            res = self.get_resource_at(x, y)
+            if res and res.symbol == "W":
                 reward += ENV_CONFIG['agent_rewards']['collecting_wood']
+                del self.resources[(x, y)]
             else:
                 reward -= 20 # arbitrary reward for invalid action
         elif action == 6:
-            # check if they have wood
-            self.boat += 1
-            reward += ENV_CONFIG['agent_rewards']['build_boat']
+            if self.wood > 0:
+                self.wood -= 1
+                self.boat += 1
+                reward += ENV_CONFIG['agent_rewards']['build_boat']
+            else: reward -= 20
         elif action == 7:
-            # check if they have wood
-            self.sword += 1
-            reward += ENV_CONFIG['agent_rewards']['build_sword']
+            if self.wood > 0:
+                self.wood -= 1
+                self.sword += 1
+                reward += ENV_CONFIG['agent_rewards']['build_sword']
+            else: reward -= 20
         elif action == 8:
-            # check if animal on tile
-            # subtract sword 
-            reward += ENV_CONFIG['agent_rewards']['hunt_animal']
-        
-        if self.hunger <= 0:
-            reward += ENV_CONFIG['agent_rewards']['dies'] 
-        return reward
+            if self.sword > 0:
+                x, y = self._current_cell
+                res = self.get_resource_at(x, y)
+                if res and res.symbol == "A":
+                    del self.resources[(x, y)]
+                    reward += ENV_CONFIG['agent_rewards']['hunt_animal']
+                else: reward -= 20
+            else: reward -= 20
+
+        state = (self._current_cell[0], self._current_cell[1], self.wood, self.boat, self.sword)
+        return state, reward, terminated, False, {}
     
     @property
     def n_actions(self):
