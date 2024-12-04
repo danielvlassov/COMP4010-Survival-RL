@@ -4,12 +4,6 @@ ENV_CONFIG = {
     'wood_spawn_rate': 0.25,        # Chance of wood appearing on forest tiles
     'animal_spawn_rate': 0.05,      # Chance of deer spawning on forest tiles
     'hunger_decay_rate': 1,         # Hunger level decay per time step
-    'initial_resources': {
-        'wood': 0,
-        'berries': 0,
-        'boats': 0,
-        'swords': 0
-    },
     # Agent-related configurations
     'agent_params': {
         'learning_rate': 0.1,
@@ -22,7 +16,13 @@ ENV_CONFIG = {
         "build_boat": 15,
         "build_sword": 15,
         "hunt_animal": 20, 
-        "dies": -50 
+        "dies": -50,
+        "explore_new_cell": 1,
+    },
+    'initial_inventory':{
+        'sword': 0,
+        'boat': 2,
+        'wood': 0
     },
     'all-land-map': """
                     LLLLLLLLLL
