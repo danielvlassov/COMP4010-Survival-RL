@@ -26,8 +26,6 @@ class GridWorld(gym.Env):
         # will be [x, y]
         self._current_cell = None
 
-        # state: (x, y, boat, sword)
-
         self.hunger = 100
 
         self.grid_size = config['grid_size']
@@ -36,15 +34,18 @@ class GridWorld(gym.Env):
         self.wood_spawn_rate = config['wood_spawn_rate']
         self.deer_spawn_rate = config['animal_spawn_rate']
         self.hunger_decay_rate = config['hunger_decay_rate']
-        self.grid = self._initialize_grid_from_string(config, map_layout)
+
+        self.config = config
+        self.map_layout = map_layout
         self.agents = []
         self.resources = {}
         # self.resources = []
-        self.setup_resources()
+        # self.setup_resources()
     
     def reset(self):
         self.visited_cells = np.zeros((self.grid_size, self.grid_size))
-        # self.setup_resources()
+        self.grid = self._initialize_grid_from_string(self.config, self.map_layout)
+        self.setup_resources()
 
         self.wood = 0
         self.boat = 0
@@ -112,14 +113,27 @@ class GridWorld(gym.Env):
         # move agent
         if action < 4:
             next_blockX, next_blockY = self._current_cell + self._directions[action]
+
             # agent only moves if still within grid
             edgeX, edgeY = self.gridsize
-            if 0 <= next_blockX < edgeX and 0 <= next_blockY < edgeY:
+
+            # if on water, try to traverse
+            if self.grid[next_blockX, next_blockY] == "W" and self.boat > 0:
+
+                self.boat -= 1
+                # go as far as you can within water
+                while 0 <= next_blockX < edgeX and 0 <= next_blockY < edgeY and self.grid[next_blockX, next_blockY] == "W":
+                    next_blockX, next_blockY += self._directions[action]
+
+            # if still in bounds, or out of water, change position
+            if 0 <= next_blockX < edgeX and 0 <= next_blockY < edgeY and self.grid[next_blockX, next_blockY] != "W":
                 self._current_cell = tuple(next_blockX, next_blockY)
+
             # reward if visiting new cell
-                if not self.visited_cells[next_blockX, next_blockY]:
-                    reward += ENV_CONFIG['agent_rewards']['explore_new_cell']
-                    self.visited_cells[x, y] = 1
+            if not self.visited_cells[next_blockX, next_blockY]:
+                reward += ENV_CONFIG['agent_rewards']['explore_new_cell']
+                self.visited_cells[x, y] = 1
+                
         elif action == 4:
             x, y = self._current_cell
             res = self.get_resource_at(x, y)

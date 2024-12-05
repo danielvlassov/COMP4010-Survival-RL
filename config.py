@@ -21,7 +21,7 @@ ENV_CONFIG = {
     },
     'initial_inventory':{
         'sword': 0,
-        'boat': 0,
+        'boat': 2,
         'wood': 0
     },
     'all-land-map': """
