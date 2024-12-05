@@ -5,7 +5,7 @@ from agents.random_agent import RandomAgent
 def main():
     grid_world = GridWorld(config, 'island-map')
     agent_initial_state = {
-        'position': [2, 0],
+        'position': [0, 0],
         'inventory': config['initial_inventory'],
         'hunger_level': 100
     }

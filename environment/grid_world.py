@@ -75,16 +75,24 @@ class GridWorld(gym.Env):
                         self.resources[(x, y)] = Animal((x, y))
     
     def render(self):
+        render_txt = ''
         for y in range(self.grid_size[0]):
             row = ''
             for x in range(self.grid_size[1]):
-                resource = self.get_resource_at(x, y)
-                if resource:
-                    row += resource.symbol
-                else:
-                    row += '.' if self.grid[y, x] == 'L' else '~'
-            print(row)
-        print()
+                agent_at_position = False
+                for agent in self.agents:
+                    if agent.position == (x, y):
+                        row += 'X' 
+                        agent_at_position = True
+                        break
+                if not agent_at_position:
+                    resource = self.get_resource_at(x, y)
+                    if resource:
+                        row += resource.symbol
+                    else:
+                        row += '.' if self.grid[y, x] == 'L' else '~'
+            render_txt += row +  "\n"
+        return render_txt
 
     def get_resource_at(self, x, y):
         if (x, y) in self.resources:
@@ -170,3 +178,11 @@ class GridWorld(gym.Env):
     @property
     def n_actions(self):
         return self.n_actions
+    
+    def remove_resource_at(self, x, y):
+        for resource in self.resources:
+            if resource.position == (x, y):
+                self.resources.remove(resource)
+                self.grid[y, x] = "L"
+                return True 
+        return False
