@@ -12,7 +12,7 @@ class GridWorld:
         # 6 -> try to eat
         # 7 -> try to place land
         # will add more later if less lazy (ig cutting works with hunting (check inv))
-        # self.n_actions = 8
+        self.n_actions = 4
         self._directions = [np.array((-1, 0)), 
                     np.array((1, 0)), 
                     np.array((0, -1)), 
@@ -38,6 +38,8 @@ class GridWorld:
         self.agents = []
         self.resources = []
         self.setup_resources()
+        self.state_size = self.grid_size[0] * self.grid_size[1]  # Total number of cells in the grid
+        self.action_size = self.n_actions  # Number of possible actions
     
     def _initialize_grid_from_string(self, config, map_string):
         map_lines = [line.strip() for line in config[map_string].strip().split('\n')]
