@@ -6,7 +6,7 @@ import numpy as np
 
 # class QLearning_Agent(RL_Agent):
 
-def QLearning(env, gamma=0.99, step_size=0.1, epsilon=0.1, max_episode=1000, evaluate_every=20):
+def QLearning(env, gamma=0.99, step_size=0.1, epsilon=0.1, max_episode=2000, evaluate_every=20):
     # max it will hold is (not possible)
     # 9 * 10 * 10 * 100 * 100 * 100
     Q = {}
@@ -33,19 +33,20 @@ def QLearning(env, gamma=0.99, step_size=0.1, epsilon=0.1, max_episode=1000, eva
         curr_reward = 0
         while not terminated:
             action = e_greedy(env, epsilon, state)
-            print(action)
 
-            action = 1
+            # action = 1
             next_state, reward, terminated, _, _ = env.step(action)
+            # print(reward)
+            curr_reward += reward
+
             q_vals = []
             for j in range(env.n_actions):
                 q_vals.append(get_q(next_state, j))
 
             next_action = np.argmax(q_vals)
-            curr_reward += reward
             Q[(state, action)] += step_size * (reward + gamma * get_q(next_state, next_action) - get_q(state, action))
             state = next_state
-        
+        # print(i ,curr_reward)
         if i % evaluate_every == 0:
             total_rewards.append(curr_reward)
 

@@ -30,8 +30,6 @@ class GridWorld(gym.Env):
         # will be [x, y]
         self._current_cell = None
 
-        self.hunger = 100
-
         self.grid_size = config['grid_size']
 
         self.berry_spawn_rate = config['berry_spawn_rate']
@@ -52,6 +50,7 @@ class GridWorld(gym.Env):
         self.grid = self._initialize_grid_from_string(self.config, self.map_layout)
         self.setup_resources()
 
+        self.hunger = 100
         self.wood = 0
         self.boat = 0
         self.sword = 0
