@@ -22,6 +22,10 @@ class GridWorld(gym.Env):
                     np.array((1, 0)), 
                     np.array((0, -1)), 
                     np.array((0, 1))]
+        # self._directions = [[-1, 0], 
+        #             [1, 0], 
+        #             [0, -1], 
+        #             [0, 1]]
 
         # will be [x, y]
         self._current_cell = None
@@ -43,7 +47,8 @@ class GridWorld(gym.Env):
         # self.setup_resources()
     
     def reset(self):
-        self.visited_cells = np.zeros((self.grid_size, self.grid_size))
+        row, col = self.grid_size
+        self.visited_cells = np.zeros([row, col])
         self.grid = self._initialize_grid_from_string(self.config, self.map_layout)
         self.setup_resources()
 
@@ -52,7 +57,10 @@ class GridWorld(gym.Env):
         self.sword = 0
 
         # start on bottom right corner
-        x = y = self.grid_size - 1
+        x, y = self.grid_size
+        x -= 1
+        y -= 1
+        self._current_cell = np.array((x, y))
         state = (x, y, self.wood, self.boat, self.sword) # total states is 10 * 10 * 8???
         return state, {}
 
@@ -115,30 +123,33 @@ class GridWorld(gym.Env):
             next_blockX, next_blockY = self._current_cell + self._directions[action]
 
             # agent only moves if still within grid
-            edgeX, edgeY = self.gridsize
+            edgeX, edgeY = self.grid_size
 
             # if on water, try to traverse
-            if self.grid[next_blockX, next_blockY] == "W" and self.boat > 0:
+            useBoat = False
+            if 0 <= next_blockX < edgeX and 0 <= next_blockY < edgeY and self.grid[next_blockX, next_blockY] == "W" and self.boat > 0:
 
-                self.boat -= 1
+                useBoat = True
                 # go as far as you can within water
                 while 0 <= next_blockX < edgeX and 0 <= next_blockY < edgeY and self.grid[next_blockX, next_blockY] == "W":
-                    next_blockX, next_blockY += self._directions[action]
+                    next_blockX, next_blockY = (next_blockX, next_blockY) + self._directions[action]
 
             # if still in bounds, or out of water, change position
             if 0 <= next_blockX < edgeX and 0 <= next_blockY < edgeY and self.grid[next_blockX, next_blockY] != "W":
-                self._current_cell = tuple(next_blockX, next_blockY)
+                self._current_cell = next_blockX, next_blockY
+                if useBoat: self.boat -= 1
 
-            # reward if visiting new cell
-            if not self.visited_cells[next_blockX, next_blockY]:
-                reward += ENV_CONFIG['agent_rewards']['explore_new_cell']
-                self.visited_cells[x, y] = 1
+                # reward if visiting new cell
+                if not self.visited_cells[next_blockX, next_blockY]:
+                    reward += ENV_CONFIG['agent_rewards']['explore_new_cell']
+                    self.visited_cells[next_blockX, next_blockY] = 1
                 
         elif action == 4:
             x, y = self._current_cell
             res = self.get_resource_at(x, y)
             if res and res.symbol == "B":
-                reward += ENV_CONFIG['agent_rewards']['collecting_berry']
+                self.hunger += 10
+                reward += ENV_CONFIG['agent_rewards']['pick_up_berry']
                 del self.resources[(x, y)]
             else:
                 reward -= 20 # arbitrary reward for invalid action
@@ -146,7 +157,7 @@ class GridWorld(gym.Env):
             x, y = self._current_cell
             res = self.get_resource_at(x, y)
             if res and res.symbol == "W":
-                reward += ENV_CONFIG['agent_rewards']['collecting_wood']
+                reward += ENV_CONFIG['agent_rewards']['pick_up_wood']
                 del self.resources[(x, y)]
             else:
                 reward -= 20 # arbitrary reward for invalid action
@@ -168,6 +179,7 @@ class GridWorld(gym.Env):
                 res = self.get_resource_at(x, y)
                 if res and res.symbol == "A":
                     del self.resources[(x, y)]
+                    self.sword -= 1
                     reward += ENV_CONFIG['agent_rewards']['hunt_animal']
                 else: reward -= 20
             else: reward -= 20
@@ -177,7 +189,7 @@ class GridWorld(gym.Env):
     
     @property
     def n_actions(self):
-        return self.n_actions
+        return self._n_actions
     
     def remove_resource_at(self, x, y):
         for resource in self.resources:
