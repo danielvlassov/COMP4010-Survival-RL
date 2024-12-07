@@ -60,7 +60,7 @@ class GridWorld(gym.Env):
         x -= 1
         y -= 1
         self._current_cell = np.array((x, y))
-        state = (x, y, self.wood, self.boat, self.sword) # total states is 10 * 10 * 8???
+        state = (self._current_cell[0], self._current_cell[1], self.wood, self.boat, self.sword) # total states is 10 * 10 * 8???
         return state, {}
 
     def _initialize_grid_from_string(self, config, map_string):
@@ -113,7 +113,7 @@ class GridWorld(gym.Env):
         self.hunger -= self.hunger_decay_rate
         terminated = self.hunger <= 0
 
-        reward = -10 # start off losing health
+        reward = 0
         if self.hunger < 0:
             reward += ENV_CONFIG['agent_rewards']['dies'] 
 
@@ -136,7 +136,9 @@ class GridWorld(gym.Env):
             # if still in bounds, or out of water, change position
             if 0 <= next_blockX < edgeX and 0 <= next_blockY < edgeY and self.grid[next_blockX, next_blockY] != "W":
                 self._current_cell = next_blockX, next_blockY
-                if useBoat: self.boat -= 1
+                if useBoat:
+                    self.boat -= 1
+                    reward += 50
 
                 # reward if visiting new cell
                 if not self.visited_cells[next_blockX, next_blockY]:
@@ -156,6 +158,7 @@ class GridWorld(gym.Env):
             x, y = self._current_cell
             res = self.get_resource_at(x, y)
             if res and res.symbol == "W":
+                self.wood += 1
                 reward += ENV_CONFIG['agent_rewards']['pick_up_wood']
                 del self.resources[(x, y)]
             else:
@@ -177,6 +180,7 @@ class GridWorld(gym.Env):
                 x, y = self._current_cell
                 res = self.get_resource_at(x, y)
                 if res and res.symbol == "A":
+                    self.hunger += 20
                     del self.resources[(x, y)]
                     self.sword -= 1
                     reward += ENV_CONFIG['agent_rewards']['hunt_animal']

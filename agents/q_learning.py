@@ -6,7 +6,7 @@ import numpy as np
 
 # class QLearning_Agent(RL_Agent):
 
-def QLearning(env, gamma=0.99, step_size=0.1, epsilon=0.1, max_episode=2000, evaluate_every=20):
+def QLearning(env, gamma=0.5, step_size=0.1, epsilon=0.1, max_episode=10000, evaluate_every=20):
     # max it will hold is (not possible)
     # 9 * 10 * 10 * 100 * 100 * 100
     Q = {}
@@ -28,7 +28,6 @@ def QLearning(env, gamma=0.99, step_size=0.1, epsilon=0.1, max_episode=2000, eva
     total_rewards = []
     for i in range(1, max_episode + 1):
         state, _ = env.reset()
-        # return
         terminated = False
         curr_reward = 0
         while not terminated:
